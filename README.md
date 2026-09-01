@@ -32,12 +32,10 @@
 - [🏗️ System Architecture](#️-system-architecture)
 - [🔌 Hardware Components](#-hardware-components)
 - [📍 Pin Configuration](#-pin-configuration)
-- [🔧 Complete Wiring Diagram](#-complete-wiring-diagram)
 - [⚡ Power Connection](#-power-connection)
 - [📡 MQTT Communication](#-mqtt-communication)
 - [🔄 How the System Works](#-how-the-system-works)
 - [🧠 Dispensing Logic](#-dispensing-logic)
-- [📨 MQTT Commands](#-mqtt-commands)
 - [💻 Software Stack](#-software-stack)
 - [📂 Repository Structure](#-repository-structure)
 - [🚀 Installation & Setup](#-installation--setup)
@@ -204,3 +202,166 @@ The system consists of an **Android application**, **HiveMQ Cloud MQTT broker**,
 
 ---
 
+## 🔌 Hardware Components
+
+- **ESP32 Microcontroller**: Serves as the main control unit, managing Wi-Fi connectivity, MQTT processing, motor operations, and IR sensor inputs.
+- **TB6612FNG Motor Driver**: Interface module driving DC motors with directional and PWM speed control.
+- **N20 12V Geared Motors (x2)**: High-torque miniature DC motors designed to rotate vending spirals.
+- **IR Obstacle Avoidance Sensors (x2)**: Positioned at dispensing chutes to detect falling items via beam interruptions.
+- **12V Power Supply**: External power source dedicated to motor operation.
+
+---
+
+## 📍 Pin Configuration
+
+| ESP32 Pin | Connected Component | Function |
+|---|---|---|
+| **GPIO 18** | TB6612FNG `AIN1` | Motor A Direction Control 1 |
+| **GPIO 19** | TB6612FNG `AIN2` | Motor A Direction Control 2 |
+| **GPIO 5** | TB6612FNG `PWMA` | Motor A Speed Control (PWM) |
+| **GPIO 16** | TB6612FNG `BIN1` | Motor B Direction Control 1 |
+| **GPIO 17** | TB6612FNG `BIN2` | Motor B Direction Control 2 |
+| **GPIO 23** | TB6612FNG `PWMB` | Motor B Speed Control (PWM) |
+| **GPIO 21** | TB6612FNG `STBY` | Motor Driver Enable (Standby Control) |
+| **GPIO 4** | IR Sensor 1 `OUT` | Product A Delivery Detection Signal |
+| **GPIO 27** | IR Sensor 2 `OUT` | Product B Delivery Detection Signal |
+| **5V (USB)** | Driver `VCC`, IR `VCC` | Logic Supply (5V) |
+| **GND** | System Ground | Common Ground Reference |
+
+---
+
+## ⚡ Power Connection
+
+- **ESP32 Logic**: Powered via 5V USB cable or a regulated 5V source[cite: 1].
+- **Motor Power**: Driven by a separate **12V DC power supply** connected to the `VM` terminal of the TB6612FNG driver.
+- **Common Ground**: All `GND` lines (ESP32, TB6612FNG, IR Sensors, and 12V supply) are tied together to establish a shared signal reference.
+
+---
+
+## 📡 MQTT Communication
+
+The machine uses **HiveMQ Cloud** as the central broker. Data payload formats rely on structured JSON.
+
+### MQTT Topics
+- **Command Topic**: Receives product order JSON messages from the mobile application.
+- **Status Topic**: Publishes system events, inventory counts, and dispensing outcomes back to the app.
+
+### Example Payload
+```json
+{
+  "command": "dispense",
+  "a": 2,
+  "b": 1
+}
+```
+
+---
+
+## 🔄 How the System Works
+
+1. **Order Dispatch**: The user places an order on the Android app, sending an MQTT message containing product counts via HiveMQ Cloud.
+2. **Order Processing**: The ESP32 parses the incoming JSON, verifies current inventory stock, and queues requested items.
+3. **Motor Activation**: The ESP32 triggers the appropriate motor through the TB6612FNG motor driver.
+4. **IR Sensor Detection**: As the item falls down the chute, it breaks the IR sensor beam, toggling its pin state from `HIGH` to `LOW`.
+5. **Completion & Updates**: The ESP32 immediately halts the motor upon detection, decrements internal inventory, and publishes updated status data over MQTT.
+
+---
+
+## 🧠 Dispensing Logic
+
+- **Queueing System**: Multi-item requests are broken down into sequential steps (e.g., `[Product A, Product A, Product B]`).
+- **IR Sensing Interruption**: Motors run continuous rotation until `digitalRead(IR_PIN) == LOW` is met.
+- **Timeout Protection**: Includes failure detection; if an item fails to interrupt the IR sensor within a specified period, the motor turns off automatically to avoid hardware burnout or jammed operations.
+
+---
+
+## 💻 Software Stack
+
+- **Firmware Framework**: Arduino IDE / ESP32 Core
+- **Libraries**:
+  - `WiFi.h`: Handles Wi-Fi network initialization.
+  - `PubSubClient.h`: Manages MQTT broker client connections and subscriptions.
+  - `ArduinoJson.h`: Parses JSON order payloads and serializes status messages.
+- **Cloud Infrastructure**: HiveMQ Cloud Broker
+- **Mobile Application**: Native Android Application
+
+---
+
+## 📂 Repository Structure
+
+```text
+Smart-IoT-Based-Vending-Machine/
+├── firmware/
+│   └── vending_machine.ino                                    # ESP32 source code
+├── Documentation/
+│   └── Smart_IoT_Vending_Machine_Documentation.pdf            # Full project report                     
+└── README.md                                                  # Project documentation overview
+```
+
+---
+
+## 🚀 Installation & Setup
+
+1. **Hardware Assembly**: Wire components according to the [Pin Configuration](#-pin-configuration) table.
+2. **Setup Arduino IDE**:
+   - Install ESP32 board support packages.
+   - Install dependent libraries: `PubSubClient` and `ArduinoJson`.
+3. **Firmware Configuration**: Open the firmware project file and update network parameters:
+   ```cpp
+   #define WIFI_SSID "YOUR_WIFI_NAME"
+   #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+   #define MQTT_BROKER "YOUR_HIVEMQ_HOST"
+   #define MQTT_USER "YOUR_MQTT_USERNAME"
+   #define MQTT_PASS "YOUR_MQTT_PASSWORD"
+   ```
+4. **Upload Firmware**: Flash the code to your ESP32 board over USB.
+5. **Android App Connection**: Configure the Android app to target your HiveMQ credentials and command topics.
+
+---
+
+## 🔐 Security
+
+- Supports encrypted **MQTT over TLS** connections on port 8883.
+- Utilizes HiveMQ Cloud user authentication credentials (`Username` / `Password`) for authorized network interaction.
+
+---
+
+## 🛠️ Troubleshooting
+
+- **Motor Fails to Turn**: Check external 12V DC power availability and confirm that `STBY` (GPIO 21) is driven HIGH.
+- **IR Detection Fails**: Ensure direct optical alignment between IR LEDs and photodiode receivers. Adjust onboard potentiometer sensitivity if necessary.
+- **MQTT Connectivity Issues**: Verify Wi-Fi networks have active Internet connections and double-check HiveMQ host credentials.
+
+---
+
+## 🌟 Advantages
+
+- Eliminates cash/coin processing hardware costs and manual emptying needs.
+- Remote inventory tracking and real-time operational feedback.
+- High scalability; system layout easily expands to support more slots.
+- Reliable dispensing feedback through IR sensors prevents over-dispensing.
+
+---
+
+## 🔮 Future Improvements
+
+- Integration of mobile payment gateways (e.g., bKash, Nagad, Rocket).
+- Dynamic QR code creation directly on display screens.
+- Expanded cloud database record management using Firebase.
+- Dedicated web portal dashboards for remote inventory control.
+
+---
+
+## 📄 Documentation
+
+A complete technical project documentation report is available in the [`Documentation/`](./Documentation/) directory.
+
+---
+
+## 👨‍💻 Project Information
+
+Developed by students of the **Department of Computer Science & Engineering** at **Khulna University of Engineering & Technology (KUET)**:
+- **Roll**: 2207042
+- **Roll**: 2207059
+
+**Repository Link**: [https://github.com/AshrafulHosen/Smart-IoT-Based-Vending-Machine](https://github.com/AshrafulHosen/Smart-IoT-Based-Vending-Machine)

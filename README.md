@@ -361,7 +361,11 @@ A complete technical project documentation report is available in the [`Document
 ## 👨‍💻 Project Information
 
 Developed by students of the **Department of Computer Science & Engineering** at **Khulna University of Engineering & Technology (KUET)**:
-- **Roll**: 2207042
-- **Roll**: 2207059
+|*Name*|*Roll*|
+|---|---|
+|Ashraful Hosen|2207042|
+|Amdadul Haque|2207059|
 
 **Repository Link**: [https://github.com/AshrafulHosen/Smart-IoT-Based-Vending-Machine](https://github.com/AshrafulHosen/Smart-IoT-Based-Vending-Machine)
+
+---

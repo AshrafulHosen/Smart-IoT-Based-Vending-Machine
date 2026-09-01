@@ -12,12 +12,6 @@
   <img src="https://img.shields.io/badge/IoT-Project-success?style=for-the-badge" alt="IoT">
 </p>
 
-<p>
-  <img src="https://img.shields.io/github/repo-size/AshrafulHosen/Smart-IoT-Based-Vending-Machine?style=flat-square">
-  <img src="https://img.shields.io/github/last-commit/AshrafulHosen/Smart-IoT-Based-Vending-Machine?style=flat-square">
-  <img src="https://img.shields.io/github/stars/AshrafulHosen/Smart-IoT-Based-Vending-Machine?style=flat-square">
-</p>
-
 ### 🌐 A low-cost, Internet-connected vending machine controlled remotely through an Android application using MQTT.
 
 </div>
